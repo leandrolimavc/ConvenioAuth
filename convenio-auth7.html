@@ -1,0 +1,1485 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ConvênioAuth</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#f1f4f8; --surface:#ffffff; --surface2:#f8f9fb;
+  --border:#dde1ea; --accent:#1a56db; --accent2:#057a55; --warn:#c81e1e;
+  --yellow:#92400e; --purple:#5521b5; --orange:#c2410c;
+  --text:#111827; --muted:#6b7280; --radius:10px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;}
+
+#global-loading{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;}
+.spinner{width:44px;height:44px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:13px;color:var(--muted);font-family:'DM Mono',monospace;}
+
+#login-screen{display:none;min-height:100vh;align-items:center;justify-content:center;background:linear-gradient(145deg,#eef2ff 0%,#f1f4f8 50%,#f0fdf4 100%);}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:40px;width:100%;max-width:400px;box-shadow:0 4px 6px -1px rgba(0,0,0,.06),0 20px 60px -10px rgba(0,0,0,.1);}
+.login-logo{text-align:center;margin-bottom:28px;}
+.login-logo .icon{font-size:40px;margin-bottom:10px;}
+.login-logo h1{font-size:22px;font-weight:800;}
+.login-logo p{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;letter-spacing:1px;margin-top:4px;}
+.login-err{background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.3);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--warn);margin-bottom:14px;display:none;}
+.login-err.show{display:block;}
+.lf-group{margin-bottom:14px;}
+.lf-group label{display:block;font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:7px;}
+.lf-group input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:11px 13px;color:var(--text);font-family:'Syne',sans-serif;font-size:14px;outline:none;transition:border-color .2s;}
+.lf-group input:focus{border-color:var(--accent);}
+.btn-login{width:100%;background:linear-gradient(135deg,var(--accent),#3a6fd8);border:none;border-radius:var(--radius);padding:13px;color:#fff;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px;transition:opacity .2s;display:flex;align-items:center;justify-content:center;gap:8px;}
+.btn-login:hover{opacity:.85;}
+.btn-login:disabled{opacity:.5;cursor:not-allowed;}
+.url-box{background:#f5f3ff;border:1px solid #ddd6fe;border-radius:12px;padding:16px;margin-top:18px;}
+.url-box-title{font-size:11px;font-weight:700;color:#5521b5;margin-bottom:6px;}
+.url-box p{font-size:11px;color:var(--muted);line-height:1.6;margin-bottom:10px;}
+.url-row{display:flex;gap:8px;}
+.url-row input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:9px 12px;color:var(--text);font-family:'DM Mono',monospace;font-size:11px;outline:none;}
+.btn-url{background:var(--purple);border:none;border-radius:var(--radius);padding:9px 14px;color:#fff;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;}
+.url-status{font-size:11px;margin-top:8px;font-family:'DM Mono',monospace;}
+.url-status.ok{color:var(--accent2);}
+.url-status.err{color:var(--warn);}
+
+#app{display:none;}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 1px 3px rgba(0,0,0,.06);}
+.logo{display:flex;align-items:center;gap:12px;}
+.logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;}
+.logo-text{font-size:16px;font-weight:800;}
+.logo-sub{font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;letter-spacing:1px;text-transform:uppercase;}
+.header-right{display:flex;align-items:center;gap:12px;}
+.header-stats{display:flex;gap:10px;}
+.stat-pill{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:5px 13px;font-size:11px;display:flex;align-items:center;gap:6px;}
+.stat-dot{width:7px;height:7px;border-radius:50%;}
+.user-chip{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:8px;}
+.role-badge{font-size:9px;font-family:'DM Mono',monospace;background:var(--accent);color:#fff;border-radius:4px;padding:1px 5px;text-transform:uppercase;}
+.role-badge.admin{background:#5521b5;}
+.sync-btn{background:none;border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--muted);font-family:'Syne',sans-serif;font-size:12px;cursor:pointer;transition:all .2s;}
+.sync-btn:hover{border-color:var(--accent2);color:var(--accent2);}
+.btn-logout{background:none;border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--muted);font-family:'Syne',sans-serif;font-size:12px;cursor:pointer;transition:all .2s;}
+.btn-logout:hover{border-color:var(--warn);color:var(--warn);}
+
+.tabs-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 28px;display:flex;gap:4px;overflow-x:auto;}
+.tab{padding:11px 16px;font-size:12px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;color:var(--muted);white-space:nowrap;transition:all .2s;user-select:none;}
+.tab:hover{color:var(--text);}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:700;}
+.tab-badge{display:inline-flex;align-items:center;justify-content:center;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1px 6px;font-size:10px;font-family:'DM Mono',monospace;margin-left:5px;color:var(--muted);}
+main{max-width:1380px;margin:0 auto;padding:22px;}
+
+.toolbar{display:flex;gap:9px;margin-bottom:18px;flex-wrap:wrap;align-items:center;}
+.search-wrap{flex:1;min-width:200px;position:relative;}
+.search-wrap input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:9px 14px 9px 38px;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;outline:none;transition:border-color .2s;}
+.search-wrap input:focus{border-color:var(--accent);}
+.s-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px;}
+.filter-btn{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:9px 14px;color:var(--text);font-family:'Syne',sans-serif;font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.filter-btn:hover{border-color:var(--accent);}
+.f-all{background:var(--accent)!important;border-color:var(--accent)!important;color:#fff!important;}
+.f-analise{background:var(--yellow)!important;border-color:var(--yellow)!important;color:#000!important;}
+.f-autorizado{background:var(--accent2)!important;border-color:var(--accent2)!important;color:#000!important;}
+.f-negada{background:var(--warn)!important;border-color:var(--warn)!important;color:#fff!important;}
+.btn-add{background:linear-gradient(135deg,var(--accent),#3a6fd8);border:none;border-radius:var(--radius);padding:9px 16px;color:#fff;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;transition:opacity .2s;white-space:nowrap;}
+.btn-add:hover{opacity:.85;}
+
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.04);}
+table{width:100%;border-collapse:collapse;}
+thead tr{background:#f1f4f8;border-bottom:1px solid var(--border);}
+th{padding:11px 15px;text-align:left;font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);letter-spacing:1.1px;text-transform:uppercase;font-weight:500;white-space:nowrap;cursor:pointer;user-select:none;}
+th:hover{color:var(--text);}
+tbody tr{border-bottom:1px solid var(--border);transition:background .15s;animation:fadeIn .22s ease both;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:#f8faff;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+td{padding:11px 12px;font-size:12px;vertical-align:middle;}
+.num{font-family:'DM Mono',monospace;color:var(--accent);font-size:12px;font-weight:500;}
+
+/* ── BADGES STATUS ────────────────────────────── */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;}
+.badge-analise{background:#fef3c7;color:#78350f;border:1px solid #fde68a;}
+.badge-negada{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;}
+.badge-autorizado{background:#d1fae5;color:#065f46;border:1px solid #a7f3d0;}
+.badge-pendente  {background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;}
+.badge-arquivado {background:#f0fdf4;color:#166534;border:1px solid #86efac;}
+
+/* ── CONVÊNIO COLORIDO ────────────────────────── */
+.conv-tag{display:inline-flex;align-items:center;padding:3px 8px;border-radius:5px;font-size:10px;font-weight:800;white-space:nowrap;font-family:'Plus Jakarta Sans',sans-serif;}
+/* Amil — azul royal */
+.conv-amil        {background:#e8f0fe;color:#1a56db;border:1px solid #c7d8fc;font-weight:800;}
+/* Asfeb — azul marinho */
+.conv-asfeb       {background:#e6eaf5;color:#1a2e6b;border:1px solid #b0bde0;font-weight:800;}
+/* Bradesco — vermelho Bradesco */
+.conv-bradesco    {background:#fce8e8;color:#cc0000;border:1px solid #f5b8b8;font-weight:800;}
+/* Cassi — azul BB/Cassi */
+.conv-cassi       {background:#e6f0fa;color:#005ca8;border:1px solid #b3d1ef;font-weight:800;}
+/* Geap — verde Geap */
+.conv-geap        {background:#e6f4ec;color:#007a3d;border:1px solid #a3d4b8;font-weight:800;}
+/* Planserv — azul governo */
+.conv-planserv    {background:#e8edf8;color:#1f3c88;border:1px solid #b5c3e8;font-weight:800;}
+/* Plansul — azul Plansul */
+.conv-plansul     {background:#e7f0fb;color:#005baa;border:1px solid #aecde8;font-weight:800;}
+/* Postal Saúde — amarelo Correios */
+.conv-postal      {background:#fff8e6;color:#c47f00;border:1px solid #fde49a;font-weight:800;}
+/* Promédica — verde saúde */
+.conv-promedica   {background:#e8f5ec;color:#1a7c3e;border:1px solid #a8d8b8;font-weight:800;}
+/* SelectSaúde — laranja */
+.conv-select      {background:#fff3e6;color:#c45f00;border:1px solid #fdd09a;font-weight:800;}
+/* SulAmérica — laranja SulAmérica */
+.conv-sulamerica  {background:#fff0e6;color:#c44f00;border:1px solid #fdc89a;font-weight:800;}
+/* Unimed — verde Unimed */
+.conv-unimed      {background:#e6f5ec;color:#006b33;border:1px solid #9ed4b5;font-weight:800;}
+/* União Médica — azul União Médica */
+.conv-uniaomedica {background:#e8f0fb;color:#003f9e;border:1px solid #adc4ef;font-weight:800;}
+/* Vitallis — roxo */
+.conv-vitallis    {background:#f3eefa;color:#6b21a8;border:1px solid #d0b0ef;font-weight:800;}
+.conv-outro       {background:#f1f4f8;color:#6b7280;border:1px solid #dde1ea;font-weight:700;}
+
+.obs-cell{font-size:11px;color:var(--muted);font-style:italic;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.nome-cell{font-weight:600;font-size:12px;}
+
+/* ── RASTREIO COM DATA/HORA ───────────────────── */
+.audit-cell{font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;line-height:1.6;min-width:110px;}
+.audit-who{color:var(--accent);font-weight:600;font-size:10px;}
+.audit-action-label{font-size:9px;text-transform:uppercase;letter-spacing:.5px;}
+.audit-action-label.criado{color:var(--accent2);}
+.audit-action-label.editado{color:var(--yellow);}
+.audit-dt{color:var(--muted);font-size:10px;}
+
+.actions{display:flex;gap:5px;}
+.btn-act{background:none;border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--muted);cursor:pointer;font-size:11px;transition:all .2s;}
+.btn-act:hover{border-color:var(--accent);color:var(--accent);background:#eff4ff;}
+.btn-act.del:hover{border-color:var(--warn);color:var(--warn);background:#fff1f2;}
+.empty{text-align:center;padding:48px 20px;color:var(--muted);}
+.empty-icon{font-size:34px;margin-bottom:10px;}
+.table-footer{display:flex;align-items:center;justify-content:space-between;padding:11px 15px;border-top:1px solid var(--border);background:#f8f9fb;font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;}
+.export-btn{background:none;border:1px solid var(--border);border-radius:6px;padding:4px 11px;color:var(--muted);font-family:'Syne',sans-serif;font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;}
+.export-btn:hover{border-color:var(--accent2);color:var(--accent2);}
+
+.unimed-banner{background:linear-gradient(135deg,#f0fdf4,#eff6ff);border:1px solid #a7f3d0;border-radius:12px;padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;gap:12px;}
+.unimed-banner-title{font-size:14px;font-weight:700;color:#065f46;}
+.unimed-banner-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+
+.adm-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+@media(max-width:800px){.adm-grid{grid-template-columns:1fr;}}
+.adm-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+.adm-card-header{background:#f8f9fb;border-bottom:1px solid var(--border);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;}
+.adm-card-title{font-size:13px;font-weight:700;}
+.adm-card-body{padding:18px;}
+.user-list{display:flex;flex-direction:column;gap:10px;}
+.user-item{background:#f8f9fb;border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;}
+.user-item-left{display:flex;align-items:center;gap:10px;}
+.user-avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;}
+.user-name{font-size:13px;font-weight:600;}
+.user-login{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;}
+.role-chip{font-size:10px;font-family:'DM Mono',monospace;border-radius:5px;padding:2px 8px;font-weight:700;text-transform:uppercase;}
+.role-admin{background:rgba(192,132,252,.2);color:var(--purple);border:1px solid rgba(192,132,252,.3);}
+.role-user{background:rgba(79,143,255,.15);color:var(--accent);border:1px solid rgba(79,143,255,.3);}
+.audit-list{display:flex;flex-direction:column;gap:8px;max-height:380px;overflow-y:auto;}
+.audit-item{background:#f8f9fb;border:1px solid var(--border);border-radius:8px;padding:10px 13px;}
+.audit-item-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+.audit-ev{font-size:11px;font-weight:700;}
+.audit-ev.create{color:var(--accent2);}
+.audit-ev.edit{color:var(--yellow);}
+.audit-ev.delete{color:var(--warn);}
+.audit-ts{font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;}
+.audit-desc{font-size:11px;color:var(--muted);}
+.audit-desc b{color:var(--text);}
+
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(15,22,35,.4);z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(3px);}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;width:100%;max-width:520px;animation:slideUp .22s ease;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.15);}
+@keyframes slideUp{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal h2{font-size:17px;font-weight:800;margin-bottom:20px;}
+.form-row{display:flex;gap:11px;}
+.form-group{margin-bottom:13px;flex:1;}
+.form-group label{display:block;font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;}
+.form-group input,.form-group select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;color:var(--text);font-family:'Syne',sans-serif;font-size:13px;outline:none;transition:border-color .2s;appearance:none;}
+.form-group input:focus,.form-group select:focus{border-color:var(--accent);}
+.form-group select option{background:var(--surface2);color:var(--text);}
+.modal-actions{display:flex;gap:10px;margin-top:20px;}
+.btn-cancel{flex:1;background:none;border:1px solid var(--border);border-radius:var(--radius);padding:11px;color:var(--muted);font-family:'Syne',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;}
+.btn-cancel:hover{border-color:var(--text);color:var(--text);}
+.btn-save{flex:2;background:linear-gradient(135deg,var(--accent),#3a6fd8);border:none;border-radius:var(--radius);padding:11px;color:#fff;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:opacity .2s;display:flex;align-items:center;justify-content:center;gap:8px;}
+.btn-save:hover{opacity:.85;}
+.btn-save:disabled{opacity:.5;cursor:not-allowed;}
+.btn-save-green{background:linear-gradient(135deg,var(--accent2),#00b37a);color:#000;}
+
+.toast{position:fixed;bottom:20px;right:20px;background:#111827;border-radius:10px;padding:12px 17px;font-size:12px;font-weight:600;color:#fff;z-index:999;transform:translateY(70px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1);box-shadow:0 8px 24px rgba(0,0,0,.2);}
+.toast.show{transform:translateY(0);opacity:1;}
+
+/* ── FILTRO CONVÊNIO ─────────────────────────────── */
+.conv-filter-wrap{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;padding:10px 14px;background:#f8f9fb;border-radius:var(--radius);border:1px solid var(--border);}
+.conv-filter-btn{background:none;border:1px solid var(--border);border-radius:20px;padding:3px 11px;font-size:11px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .15s;font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;}
+.conv-filter-btn:hover{border-color:var(--accent);color:var(--text);}
+.conv-filter-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+.conv-filter-label{font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;letter-spacing:1px;text-transform:uppercase;display:flex;align-items:center;margin-right:4px;}
+
+/* ── BUSCA GLOBAL ────────────────────────────────── */
+.global-search-wrap{position:relative;margin-bottom:16px;}
+.global-search-wrap input{width:100%;background:var(--surface);border:1px solid var(--accent);border-radius:var(--radius);padding:10px 14px 10px 40px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;outline:none;}
+.global-results{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-top:8px;overflow:hidden;max-height:420px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.08);}
+.global-result-item{padding:11px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;display:flex;align-items:center;gap:12px;}
+.global-result-item:last-child{border-bottom:none;}
+.global-result-item:hover{background:#f1f5ff;}
+.gr-tab{font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);min-width:80px;}
+.gr-nome{font-weight:600;font-size:13px;}
+.gr-reg{font-family:'DM Mono',monospace;font-size:11px;color:var(--accent);}
+.gr-empty{padding:24px;text-align:center;color:var(--muted);font-size:13px;}
+
+/* ── HISTÓRICO ───────────────────────────────────── */
+.modal-hist .modal{max-width:580px;}
+.hist-list{display:flex;flex-direction:column;gap:8px;max-height:380px;overflow-y:auto;}
+.hist-item{background:#f8f9fb;border:1px solid var(--border);border-radius:8px;padding:11px 14px;}
+.hist-item-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;}
+.hist-ev{font-size:11px;font-weight:700;}
+.hist-ev.create{color:var(--accent2);}
+.hist-ev.edit{color:var(--yellow);}
+.hist-ev.delete{color:var(--warn);}
+.hist-ts{font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;}
+.hist-detail{font-size:11px;color:var(--muted);}
+.hist-detail b{color:var(--text);}
+
+
+/* ── ALERTAS DE PRAZO ────────────────────────────── */
+.prazo-badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;font-family:'DM Mono',monospace;white-space:nowrap;}
+.prazo-ok      {background:#d1fae5;color:#065f46;border:1px solid #a7f3d0;}
+.prazo-alerta  {background:#fef3c7;color:#78350f;border:1px solid #fde68a;}
+.prazo-urgente {background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;}
+.prazo-vencido {background:#fecaca;color:#7f1d1d;border:1px solid #f87171;}
+.prazo-sem     {color:var(--muted);font-size:10px;font-family:'DM Mono',monospace;}
+
+/* Linhas coloridas por urgência */
+tbody tr.row-urgente{background:#fff1f1!important;}
+tbody tr.row-urgente:hover{background:#ffe4e4!important;}
+tbody tr.row-vencido{background:#ffe4e4!important;}
+tbody tr.row-vencido:hover{background:#fecaca!important;}
+tbody tr.row-alerta{background:#fffbeb!important;}
+tbody tr.row-alerta:hover{background:#fef3c7!important;}
+
+/* Aba urgentes */
+.urgentes-header{background:#fff1f2;border:1px solid #fecdd3;border-radius:12px;padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;gap:12px;}
+.urgentes-title{font-size:14px;font-weight:700;color:#9f1239;}
+.urgentes-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+.urgentes-count{background:#e11d48;color:#fff;border-radius:20px;padding:3px 12px;font-size:12px;font-weight:800;margin-left:auto;}
+.arquivados-header{background:#f0fdf4;border:1px solid #a7f3d0;border-radius:12px;padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;gap:12px;}
+.arquivados-title{font-size:14px;font-weight:700;color:#166534;}
+.arquivados-sub{font-size:11px;color:#6b7280;margin-top:2px;}
+.arquivados-count{background:#16a34a;color:#fff;border-radius:20px;padding:3px 12px;font-size:12px;font-weight:800;margin-left:auto;}
+.mes-section-title{font-size:11px;font-weight:700;color:#374151;letter-spacing:.5px;text-transform:uppercase;margin:18px 0 8px;font-family:'DM Mono',monospace;padding:6px 12px;background:#f8f9fb;border-radius:6px;display:inline-block;}
+.btn-desarquivar{background:#fff;border:1.5px solid #16a34a;border-radius:6px;padding:4px 10px;color:#16a34a;cursor:pointer;font-size:11px;font-weight:700;transition:all .15s;}
+.btn-desarquivar:hover{background:#f0fdf4;}
+
+.sort-arrow{margin-left:3px;opacity:.3;font-size:9px;}
+.sort-arrow.on{opacity:1;color:var(--accent);}
+@media(max-width:700px){header{padding:11px 14px;}.header-stats{display:none;}main{padding:12px;}.tabs-bar{padding:0 10px;}th,td{padding:9px 10px;}.form-row{flex-direction:column;}}
+</style>
+</head>
+<body>
+
+<div id="global-loading">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loading-text">Iniciando...</div>
+</div>
+
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="icon">🏥</div>
+      <h1>ConvênioAuth</h1>
+      <p>SISTEMA DE AUTORIZAÇÕES</p>
+    </div>
+    <div class="login-err" id="login-err"></div>
+    <div class="lf-group"><label>Usuário</label><input type="text" id="lf-user" placeholder="seu.login" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <div class="lf-group"><label>Senha</label><input type="password" id="lf-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <button class="btn-login" id="btn-login" onclick="doLogin()">Entrar</button>
+    <div class="url-box">
+      <div class="url-box-title">⚙ URL do Apps Script</div>
+      <p>Cole aqui a URL se precisar atualizar.</p>
+      <div class="url-row">
+        <input type="text" id="api-url-input" placeholder="https://script.google.com/macros/s/...">
+        <button class="btn-url" onclick="salvarURL()">Salvar</button>
+      </div>
+      <div class="url-status" id="url-status"></div>
+    </div>
+  </div>
+</div>
+
+<div id="app">
+  <header>
+    <div class="logo">
+      <div class="logo-icon">🏥</div>
+      <div>
+        <div class="logo-text">ConvênioAuth</div>
+        <div class="logo-sub">Controle de Autorizações</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="header-stats">
+        <div class="stat-pill"><div class="stat-dot" style="background:var(--yellow)"></div><span id="cnt-analise">0</span> Análise</div>
+        <div class="stat-pill"><div class="stat-dot" style="background:#1d4ed8"></div><span id="cnt-autorizado">0</span> Pendente</div>
+        <div class="stat-pill"><div class="stat-dot" style="background:var(--warn)"></div><span id="cnt-negada">0</span> Negadas</div>
+        <div class="stat-pill"><div class="stat-dot" style="background:var(--accent)"></div><span id="cnt-total">0</span> Total</div>
+        <div class="stat-pill" style="border-color:rgba(255,107,107,.4);cursor:pointer" onclick="switchTab('🚨 Urgentes')"><div class="stat-dot" style="background:var(--warn)"></div><span id="cnt-urgentes">0</span> Urgentes</div>
+        <div class="stat-pill" style="border-color:#a7f3d0;cursor:pointer" onclick="switchTab('✅ Arquivados')"><div class="stat-dot" style="background:#16a34a"></div><span id="cnt-arquivados">0</span> Arquivados</div>
+      </div>
+      <button class="sync-btn" onclick="openGlobalSearch()" style="border-color:var(--purple);color:var(--purple)">🔍 Busca Global</button>
+      <button class="sync-btn" onclick="syncNow()">⟳ Sincronizar</button>
+      <div class="user-chip"><span id="chip-name">—</span><span class="role-badge" id="chip-role">user</span></div>
+      <button class="btn-logout" onclick="doLogout()">Sair</button>
+    </div>
+  </header>
+  <div class="tabs-bar" id="tabs-bar"></div>
+  <main id="main-content"></main>
+</div>
+
+<!-- MODAL AUTORIZAÇÃO -->
+<div class="modal-overlay" id="modal-auth">
+  <div class="modal">
+    <h2 id="modal-auth-title">📋 Nova Autorização</h2>
+    <div class="form-row">
+      <div class="form-group"><label>Nº Registro *</label><input type="text" id="f-registro" placeholder="Ex: 3784645"></div>
+      <div class="form-group"><label>Nº Guia</label><input type="text" id="f-guia" placeholder="Ex: 7165195"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Status *</label>
+        <select id="f-status">
+          <option value="">— Selecione —</option>
+          <option value="Análise">Em Análise</option>
+          <option value="Pendente">Pendente</option>
+          <option value="Autorizado">Autorizado</option>
+          <option value="Negada">Negada</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Convênio *</label>
+        <select id="f-convenio">
+          <option value="">— Selecione —</option>
+          <option value="Amil">Amil</option>
+          <option value="Asfeb">Asfeb</option>
+          <option value="Bradesco">Bradesco</option>
+          <option value="Cassi">Cassi</option>
+          <option value="Geap">Geap</option>
+          <option value="Planserv">Planserv</option>
+          <option value="Plansul">Plansul</option>
+          <option value="Postal Saúde">Postal Saúde</option>
+          <option value="Promédica">Promédica</option>
+          <option value="SelectSaúde">SelectSaúde</option>
+          <option value="SulAmérica">SulAmérica</option>
+          <option value="União Médica">União Médica</option>
+          <option value="Unimed">Unimed</option>
+          <option value="Vitallis">Vitallis</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label>Nome do Paciente *</label><input type="text" id="f-nome" placeholder="Nome completo"></div>
+    <div class="form-group"><label>Observação / Contato</label><input type="text" id="f-obs" placeholder="Telefone, e-mail ou observação"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModals()">Cancelar</button>
+      <button class="btn-save" id="btn-save-auth" onclick="saveAuth()">💾 Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL UNIMED -->
+<div class="modal-overlay" id="modal-unimed">
+  <div class="modal">
+    <h2 id="modal-unimed-title">🏥 Adicionar Paciente Unimed</h2>
+    <div class="form-group"><label>Nome do Paciente *</label><input type="text" id="uf-nome" placeholder="Nome completo"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Data Agendada</label><input type="date" id="uf-data"></div>
+      <div class="form-group"><label>Telefone</label><input type="text" id="uf-tel" placeholder="77 99999-9999"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModals()">Cancelar</button>
+      <button class="btn-save btn-save-green" id="btn-save-unimed" onclick="saveUnimed()">💾 Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL USUÁRIO -->
+<div class="modal-overlay" id="modal-user">
+  <div class="modal">
+    <h2 id="modal-user-title">👤 Novo Usuário</h2>
+    <div class="form-row">
+      <div class="form-group"><label>Nome Completo *</label><input type="text" id="uf-fullname" placeholder="Ex: Maria Silva"></div>
+      <div class="form-group"><label>Login *</label><input type="text" id="uf-login" placeholder="Ex: maria.silva"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Senha *</label><input type="password" id="uf-password" placeholder="mínimo 6 caracteres"></div>
+      <div class="form-group"><label>Perfil</label>
+        <select id="uf-role"><option value="user">Usuário</option><option value="admin">Administrador</option></select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModals()">Cancelar</button>
+      <button class="btn-save" id="btn-save-user" onclick="saveUser()">💾 Salvar</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL BUSCA GLOBAL -->
+<div class="modal-overlay" id="modal-global">
+  <div class="modal" style="max-width:640px">
+    <h2>🔍 Busca Global</h2>
+    <div class="global-search-wrap">
+      <span class="s-icon">🔍</span>
+      <input type="text" id="global-q" placeholder="Buscar em todos os meses..." oninput="runGlobalSearch(this.value)" autocomplete="off">
+    </div>
+    <div id="global-results" class="global-results"><div class="gr-empty">Digite para buscar em todos os meses</div></div>
+    <div class="modal-actions" style="margin-top:14px">
+      <button class="btn-cancel" onclick="closeModals()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL HISTÓRICO -->
+<div class="modal-overlay modal-hist" id="modal-hist">
+  <div class="modal" style="max-width:580px">
+    <h2>📋 Histórico do Registro</h2>
+    <div id="hist-content" class="hist-list"></div>
+    <div class="modal-actions" style="margin-top:14px">
+      <button class="btn-cancel" onclick="closeModals()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════
+const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbx_IDzZChQ_1Tv3cCsAmSLVrFc10WS-tsB2wUt0DwjuxmuJ03jFeR0xif2Zl7x3Hnh8/exec';
+
+const DEFAULT_USERS = [
+  {id:'1', fullname:'Fabrício',    login:'fabricio',   password:'fabricio',   role:'admin', color:'#4f8fff'},
+  {id:'2', fullname:'Leandro',     login:'leandro',    password:'leandro',    role:'admin', color:'#c084fc'},
+  {id:'3', fullname:'Call Center', login:'callcenter', password:'callcenter', role:'user',  color:'#00e5a0'},
+];
+
+let API_URL = localStorage.getItem('convenio_api_url') || DEFAULT_API_URL;
+
+// ═══════════════════════════════════
+// PRAZOS POR CONVÊNIO (dias úteis)
+// ═══════════════════════════════════
+const PRAZOS_CONVENIO = {
+  'União Médica': 10,
+  'Bradesco':     2,
+  'Planserv':     2,
+  'Plansul':      15,
+  'Unimed':       10,
+  'Geap':         5,
+  'SulAmérica':   2,
+  'Cassi':        5,
+  'Promédica':    10,
+  'Amil':         10,
+  'Vitallis':     10,
+  'Asfeb':        5,
+  'Postal Saúde': 5,
+  'SelectSaúde':  10,
+};
+
+// Calcula dias úteis entre duas datas (pula sáb e dom)
+function diasUteisEntre(dataInicio, dataFim) {
+  let count = 0;
+  const cur = new Date(dataInicio);
+  cur.setHours(0,0,0,0);
+  const fim = new Date(dataFim);
+  fim.setHours(0,0,0,0);
+  while (cur < fim) {
+    cur.setDate(cur.getDate() + 1);
+    const dow = cur.getDay();
+    if (dow !== 0 && dow !== 6) count++;
+  }
+  return count;
+}
+
+// Adiciona dias úteis a uma data
+function adicionarDiasUteis(data, dias) {
+  const d = new Date(data);
+  let count = 0;
+  while (count < dias) {
+    d.setDate(d.getDate() + 1);
+    const dow = d.getDay();
+    if (dow !== 0 && dow !== 6) count++;
+  }
+  return d;
+}
+
+// Retorna info do prazo de um registro
+// { prazoDate, diasRestantes, status: 'ok'|'alerta'|'urgente'|'vencido'|'sem-prazo' }
+function calcPrazo(r) {
+  if (r.status !== 'Análise') return { status: 'sem-prazo' };
+  const prazo = PRAZOS_CONVENIO[r.convenio];
+  if (!prazo) return { status: 'sem-prazo' };
+
+  // Tenta parsear createdAt (dd/mm/yyyy, hh:mm) ou createdAt livre
+  let dataEntrada = null;
+  const raw = r.createdAt || r.editedAt || '';
+  // Tenta formato dd/mm/yyyy
+  const m = raw.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+  if (m) {
+    dataEntrada = new Date(parseInt(m[3]), parseInt(m[2])-1, parseInt(m[1]));
+  }
+  if (!dataEntrada || isNaN(dataEntrada)) return { status: 'sem-prazo' };
+
+  const prazoDate = adicionarDiasUteis(dataEntrada, prazo);
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  prazoDate.setHours(0,0,0,0);
+
+  const diffMs = prazoDate - hoje;
+  const diffDias = Math.round(diffMs / (1000*60*60*24));
+
+  let st;
+  if (diffDias < 0)     st = 'vencido';
+  else if (diffDias === 0) st = 'urgente';
+  else if (diffDias <= 2)  st = 'urgente';
+  else if (diffDias <= 4)  st = 'alerta';
+  else                     st = 'ok';
+
+  return {
+    prazoDate,
+    diasRestantes: diffDias,
+    prazoTotal: prazo,
+    status: st,
+    label: diffDias < 0
+      ? `⚠ Vencido há ${Math.abs(diffDias)}d`
+      : diffDias === 0
+        ? '🔴 Vence hoje!'
+        : diffDias <= 2
+          ? `🔴 ${diffDias}d úteis`
+          : diffDias <= 4
+            ? `🟡 ${diffDias}d úteis`
+            : `🟢 ${diffDias}d úteis`
+  };
+}
+
+
+// ═══════════════════════════════════
+// CORES POR CONVÊNIO
+// ═══════════════════════════════════
+const CONV_CLASS = {
+  'Amil':         'conv-amil',
+  'Asfeb':        'conv-asfeb',
+  'Bradesco':     'conv-bradesco',
+  'Cassi':        'conv-cassi',
+  'Geap':         'conv-geap',
+  'Planserv':     'conv-planserv',
+  'Plansul':      'conv-plansul',
+  'Postal Saúde': 'conv-postal',
+  'Promédica':    'conv-promedica',
+  'SelectSaúde':  'conv-select',
+  'SulAmérica':   'conv-sulamerica',
+  'Unimed':       'conv-unimed',
+  'Vitallis':     'conv-vitallis',
+  'União Médica': 'conv-uniaomedica',
+};
+
+function convTag(convenio) {
+  const cls = CONV_CLASS[convenio] || 'conv-outro';
+  return `<span class="conv-tag ${cls}">${convenio}</span>`;
+}
+
+// ═══════════════════════════════════
+// ESTADO
+// ═══════════════════════════════════
+let currentUser = null;
+let DB = {'Marco 2026':[],'Abril 2026':[],'Maio 2026':[],'Junho 2026':[]};
+let UNIMED = [], USERS = [], AUDIT = [];
+let currentTab = 'Maio 2026', currentFilter = 'all';
+let sortKey = '', sortDir = 1;
+let editAuthId = null, editUnimedId = null, editUserId = null;
+let currentConvFilter = 'Todos';
+let HISTORY = {}; // {id: [{action,user,timestamp,fields}]}
+let nextId = 5000;
+
+// Gera abas de meses dinamicamente (últimos 3 meses + próximo)
+function generateMonthTabs() {
+  const MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const MONTHS_KEY = ['Janeiro','Fevereiro','Marco','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const now = new Date();
+  const tabs = [];
+  // Gera do mês -3 até mês +1
+  for (let i = -3; i <= 1; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+    const key = `${MONTHS_KEY[d.getMonth()]} ${d.getFullYear()}`;
+    const label = `${MONTHS_PT[d.getMonth()]} ${d.getFullYear()}`;
+    tabs.push({key, label});
+    if (!DB[key]) DB[key] = [];
+    TAB_LABELS[key] = label;
+  }
+  return tabs.map(t => t.key);
+}
+
+let TABS_ORDER = [];
+const TAB_LABELS = {
+  'Unimed Genesy':'🏥 Unimed Genesy','⚙ Administração':'⚙ Administração','🚨 Urgentes':'🚨 Urgentes','✅ Arquivados':'✅ Arquivados'
+};
+
+function initTabs() {
+  const monthTabs = generateMonthTabs();
+  TABS_ORDER = [...monthTabs, '🚨 Urgentes', '✅ Arquivados', 'Unimed Genesy', '⚙ Administração'];
+  // Define aba padrão como mês atual
+  const now = new Date();
+  const MONTHS_KEY = ['Janeiro','Fevereiro','Marco','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  currentTab = `${MONTHS_KEY[now.getMonth()]} ${now.getFullYear()}`;
+  if (!DB[currentTab]) DB[currentTab] = [];
+}
+
+// ═══════════════════════════════════
+// API
+// ═══════════════════════════════════
+async function api(action, data = {}) {
+  const payload = encodeURIComponent(JSON.stringify(data));
+  const res = await fetch(`${API_URL}?action=${action}&data=${payload}`);
+  const json = await res.json();
+  if (json.error) throw new Error(json.error);
+  return json;
+}
+
+// ═══════════════════════════════════
+// INIT
+// ═══════════════════════════════════
+window.addEventListener('load', () => {
+  document.getElementById('global-loading').style.display = 'none';
+  document.getElementById('login-screen').style.display   = 'flex';
+  document.getElementById('api-url-input').value = API_URL;
+  if (API_URL) {
+    document.getElementById('url-status').textContent = '✓ URL configurada';
+    document.getElementById('url-status').className  = 'url-status ok';
+  }
+});
+
+function salvarURL() {
+  const url = document.getElementById('api-url-input').value.trim();
+  if (!url.startsWith('https://script.google.com')) {
+    document.getElementById('url-status').textContent = '✗ URL inválida';
+    document.getElementById('url-status').className  = 'url-status err';
+    return;
+  }
+  API_URL = url;
+  localStorage.setItem('convenio_api_url', url);
+  document.getElementById('url-status').textContent = '✓ URL salva!';
+  document.getElementById('url-status').className  = 'url-status ok';
+  showToast('✅ URL salva!');
+}
+
+// ═══════════════════════════════════
+// LOGIN / LOGOUT
+// ═══════════════════════════════════
+async function doLogin() {
+  const login    = document.getElementById('lf-user').value.trim();
+  const password = document.getElementById('lf-pass').value;
+  const errEl    = document.getElementById('login-err');
+  const btn      = document.getElementById('btn-login');
+  if (!login || !password) { errEl.textContent='⚠️ Preencha usuário e senha.'; errEl.classList.add('show'); return; }
+  btn.disabled = true; btn.textContent = 'Entrando...'; errEl.classList.remove('show');
+  try {
+    let user = null;
+    try {
+      const res = await api('login', { login, password });
+      if (res.ok) user = res.user;
+    } catch(_) {
+      const u = DEFAULT_USERS.find(u => u.login===login && u.password===password);
+      if (u) { const {password:_p,...safe}=u; user=safe; }
+    }
+    if (!user) throw new Error('Usuário ou senha incorretos');
+    currentUser = user;
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('global-loading').style.display = 'flex';
+    document.getElementById('loading-text').textContent = 'Carregando dados da planilha...';
+    await loadAllData();
+    initTabs();
+    await pushAudit('login','Fez login no sistema');
+    document.getElementById('global-loading').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('chip-name').textContent = currentUser.fullname;
+    const rb = document.getElementById('chip-role');
+    rb.textContent = currentUser.role==='admin' ? 'admin' : 'usuário';
+    if (currentUser.role==='admin') rb.classList.add('admin'); else rb.classList.remove('admin');
+    buildTabs(); render();
+  } catch(err) {
+    errEl.textContent = '❌ ' + (err.message||'Erro de conexão.');
+    errEl.classList.add('show');
+  } finally { btn.disabled=false; btn.textContent='Entrar'; }
+}
+
+async function doLogout() {
+  await pushAudit('login','Saiu do sistema');
+  currentUser=null; DB={'Marco 2026':[],'Abril 2026':[],'Maio 2026':[],'Junho 2026':[]};
+  UNIMED=[]; USERS=[]; AUDIT=[];
+  document.getElementById('app').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('lf-user').value='';
+  document.getElementById('lf-pass').value='';
+}
+
+// ═══════════════════════════════════
+// DADOS
+// ═══════════════════════════════════
+async function loadAllData() {
+  try {
+    const data = await api('getAll');
+    DB     = data.db     || {'Marco 2026':[],'Abril 2026':[],'Maio 2026':[],'Junho 2026':[]};
+    UNIMED = data.unimed || [];
+    USERS  = (data.users && data.users.length) ? data.users : DEFAULT_USERS;
+    AUDIT  = data.audit  || [];
+    const allIds = [...Object.values(DB).flat(),...UNIMED,...USERS].map(r=>parseInt(r.id)||0);
+    nextId = allIds.length ? Math.max(...allIds)+1 : 5000;
+  } catch(e) {
+    USERS = DEFAULT_USERS;
+    showToast('⚠️ Sem conexão com Sheets. Modo local.', true);
+  }
+}
+
+async function syncNow() {
+  const btn = document.querySelector('.sync-btn');
+  btn.textContent = '⟳ Sincronizando...';
+  try { await loadAllData(); buildTabs(); render(); showToast('✅ Sincronizado!'); }
+  catch(e) { showToast('❌ Erro: '+e.message, true); }
+  finally { btn.textContent = '⟳ Sincronizar'; }
+}
+
+// ═══════════════════════════════════
+// TABS / STATS / RENDER
+// ═══════════════════════════════════
+function tabCount(t){
+  if(t==='Unimed Genesy') return UNIMED.length;
+  if(t==='⚙ Administração') return USERS.length;
+  if(t==='🚨 Urgentes') return getUrgentes().length;
+  if(t==='✅ Arquivados') return getArquivados().length;
+  return (DB[t]||[]).length;
+}
+
+function getArquivados(){
+  const all=[];
+  Object.entries(DB).forEach(([tab,rows])=>{
+    (rows||[]).forEach(r=>{
+      if(r.status==='Autorizado') all.push({...r,_tab:tab});
+    });
+  });
+  return all.sort((a,b)=>(b.editedAt||b.createdAt||'').localeCompare(a.editedAt||a.createdAt||''));
+}
+
+function getArquivadosPorMes(){
+  const byMes={};
+  getArquivados().forEach(r=>{
+    if(!byMes[r._tab]) byMes[r._tab]=[];
+    byMes[r._tab].push(r);
+  });
+  return byMes;
+}
+
+function getUrgentes(){
+  const all=[];
+  Object.entries(DB).forEach(([tab,rows])=>{
+    (rows||[]).forEach(r=>{
+      const p=calcPrazo(r);
+      if(p.status==='urgente'||p.status==='vencido'||p.status==='alerta'){
+        all.push({...r,_tab:tab,_prazo:p});
+      }
+    });
+  });
+  return all.sort((a,b)=>a._prazo.diasRestantes-b._prazo.diasRestantes);
+}
+function buildTabs(){
+  const isAdmin=currentUser?.role==='admin';
+  const tabs=isAdmin?TABS_ORDER:TABS_ORDER.filter(t=>t!=='⚙ Administração');
+  document.getElementById('tabs-bar').innerHTML=tabs.map(t=>
+    `<div class="tab${t===currentTab?' active':''}" onclick="switchTab('${t}')">${TAB_LABELS[t]}<span class="tab-badge">${tabCount(t)}</span></div>`
+  ).join('');
+}
+function switchTab(t){currentTab=t;currentFilter='all';currentConvFilter='Todos';sortKey='';sortDir=1;buildTabs();render();}
+
+function updateStats(){
+  const all=Object.values(DB).flat();
+  document.getElementById('cnt-analise').textContent    = all.filter(r=>r.status==='Análise').length;
+  document.getElementById('cnt-autorizado').textContent = all.filter(r=>r.status==='Pendente').length;
+  document.getElementById('cnt-negada').textContent     = all.filter(r=>r.status==='Negada').length;
+  document.getElementById('cnt-total').textContent      = all.length;
+  const urgEl=document.getElementById('cnt-urgentes');
+  if(urgEl) urgEl.textContent=getUrgentes().length;
+  const arkEl=document.getElementById('cnt-arquivados');
+  if(arkEl) arkEl.textContent=getArquivados().length;
+}
+
+function render(){
+  updateStats();
+  const main=document.getElementById('main-content');
+  if(currentTab==='⚙ Administração'){main.innerHTML=renderAdm();return;}
+  if(currentTab==='Unimed Genesy'){main.innerHTML=renderUnimed();return;}
+  if(currentTab==='🚨 Urgentes'){main.innerHTML=renderUrgentes();return;}
+  if(currentTab==='✅ Arquivados'){main.innerHTML=renderArquivados();return;}
+  main.innerHTML=renderMain();
+}
+
+function badge(s){
+  const m={Análise:['badge-analise','⏳'],Negada:['badge-negada','✗'],Autorizado:['badge-autorizado','✓'],Pendente:['badge-pendente','⏸'],Arquivado:['badge-arquivado','📁']};
+  const[c,i]=m[s]||['badge-analise','?'];
+  return `<span class="badge ${c}">${i} ${s}</span>`;
+}
+function sa(k){return sortKey!==k?'<span class="sort-arrow">↕</span>':`<span class="sort-arrow on">${sortDir===1?'↑':'↓'}</span>`;}
+
+// ── Rastreio: mostra quem + ação + data/hora ──
+function auditCell(r) {
+  if (r.editedBy && r.editedAt) {
+    return `<span class="audit-action-label editado">✏ editado</span><br>
+            <span class="audit-who">${r.editedBy}</span><br>
+            <span class="audit-dt">${r.editedAt}</span>`;
+  }
+  return `<span class="audit-action-label criado">✚ criado</span><br>
+          <span class="audit-who">${r.createdBy||'—'}</span><br>
+          <span class="audit-dt">${r.createdAt||'—'}</span>`;
+}
+
+function buildRows(rows){
+  const isAdmin=currentUser?.role==='admin';
+  if(!rows.length) return `<tr><td colspan="8"><div class="empty"><div class="empty-icon">🔎</div><div>Nenhum registro encontrado</div></div></td></tr>`;
+  return rows.map((r,i)=>{
+    const p=calcPrazo(r);
+    const rowClass=p.status==='vencido'?'row-vencido':p.status==='urgente'?'row-urgente':p.status==='alerta'?'row-alerta':'';
+    const prazoBadge=p.status==='sem-prazo'
+      ? `<span class="prazo-sem">—</span>`
+      : `<span class="prazo-badge prazo-${p.status==='ok'?'ok':p.status==='alerta'?'alerta':p.status==='urgente'?'urgente':'vencido'}">${p.label}</span>`;
+    return `<tr class="${rowClass}" style="animation-delay:${i*.025}s">
+    <td class="num">${r.registro}</td>
+    <td>${badge(r.status)}</td>
+    <td>${convTag(r.convenio)}</td>
+    <td class="nome-cell">${r.nome}</td>
+    <td class="num" style="color:var(--muted)">${r.guia||'—'}</td>
+    <td>${prazoBadge}</td>
+    <td class="obs-cell" title="${r.obs||''}">${r.obs||'—'}</td>
+    <td class="audit-cell">${auditCell(r)}</td>
+    <td><div class="actions">
+      <button class="btn-act" onclick="openAuthModal('${r.id}')">✏️</button>
+      <button class="btn-act" onclick="openHist('${r.id}')" title="Histórico">🕐</button>
+      ${isAdmin?`<button class="btn-act del" onclick="deleteAuth('${r.id}')">🗑</button>`:''}
+    </div></td>
+  </tr>`;}).join('');
+}
+
+function getRows(){
+  let rows=[...(DB[currentTab]||[])];
+  // Remove autorizados da tabela principal (vão para aba Arquivados)
+  rows=rows.filter(r=>r.status!=='Autorizado');
+  if(currentFilter!=='all') rows=rows.filter(r=>r.status===currentFilter);
+  if(currentConvFilter!=='Todos') rows=rows.filter(r=>r.convenio===currentConvFilter);
+  if(sortKey) rows.sort((a,b)=>(a[sortKey]||'').localeCompare(b[sortKey]||'','pt-BR')*sortDir);
+  return rows;
+}
+
+function setConvFilter(c){currentConvFilter=c;render();}
+
+function renderMain(){
+  const rows=getRows(), total=(DB[currentTab]||[]).length;
+  const convs=['Todos',...new Set((DB[currentTab]||[]).map(r=>r.convenio).filter(Boolean)).values()].sort((a,b)=>a==='Todos'?-1:a.localeCompare(b,'pt-BR'));
+  const convBtns=convs.map(c=>`<button class="conv-filter-btn${currentConvFilter===c?' active':''}" onclick="setConvFilter('${c}')">${c}</button>`).join('');
+  return `
+    <div class="toolbar">
+      <div class="search-wrap"><span class="s-icon">🔍</span>
+        <input type="text" id="search" placeholder="Buscar por nome, registro, guia..." oninput="liveSearch(this.value)" autocomplete="off">
+      </div>
+      <button class="filter-btn${currentFilter==='all'?' f-all':''}" onclick="setFilter('all')">Todos</button>
+      <button class="filter-btn${currentFilter==='Análise'?' f-analise':''}" onclick="setFilter('Análise')">Em Análise</button>
+      <button class="filter-btn${currentFilter==='Pendente'?' f-pendente':''}" onclick="setFilter('Pendente')">Pendente</button>
+      <button class="filter-btn${currentFilter==='Negada'?' f-negada':''}" onclick="setFilter('Negada')">Negada</button>
+      <button class="btn-add" onclick="openAuthModal()">＋ Novo</button>
+    </div>
+    <div class="conv-filter-wrap">
+      <span class="conv-filter-label">Convênio:</span>${convBtns}
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th onclick="sort('registro')">Registro ${sa('registro')}</th>
+          <th onclick="sort('status')">Status ${sa('status')}</th>
+          <th onclick="sort('convenio')">Convênio ${sa('convenio')}</th>
+          <th onclick="sort('nome')">Paciente ${sa('nome')}</th>
+          <th>Nº Guia</th><th>Prazo</th><th>Observação</th>
+          <th>Rastreio</th>
+          <th>Ações</th>
+        </tr></thead>
+        <tbody id="tbody">${buildRows(rows)}</tbody>
+      </table>
+      <div class="table-footer">
+        <span id="row-count">${rows.length} de ${total} registros</span>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="export-btn" onclick="exportCSV()">⬇ CSV</button>
+          <span>Fonte: Google Sheets ✓</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+function liveSearch(q){
+  q=q.toLowerCase();
+  let rows=(DB[currentTab]||[]).filter(r=>{
+    if(currentFilter!=='all'&&r.status!==currentFilter) return false;
+    return !q||r.registro.includes(q)||r.nome.toLowerCase().includes(q)||r.convenio.toLowerCase().includes(q)||(r.guia||'').includes(q)||(r.obs||'').toLowerCase().includes(q);
+  });
+  if(sortKey) rows.sort((a,b)=>(a[sortKey]||'').localeCompare(b[sortKey]||'','pt-BR')*sortDir);
+  const tbody=document.getElementById('tbody');
+  if(tbody){
+    tbody.innerHTML=buildRows(rows);
+    document.getElementById('row-count').textContent=`${rows.length} de ${(DB[currentTab]||[]).length} registros`;
+  }
+}
+
+function renderUnimed(){
+  const isAdmin=currentUser?.role==='admin';
+  const rows=UNIMED.map((r,i)=>`<tr style="animation-delay:${i*.025}s">
+    <td class="nome-cell">${r.nome}</td>
+    <td class="num" style="color:var(--yellow)">${r.data||'—'}</td>
+    <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--accent2)">${r.tel||'—'}</td>
+    <td class="audit-cell"><span class="audit-who">${r.createdBy||'—'}</span></td>
+    <td><div class="actions">
+      <button class="btn-act" onclick="openUnimedModal('${r.id}')">✏️</button>
+      ${isAdmin?`<button class="btn-act del" onclick="deleteUnimed('${r.id}')">🗑</button>`:''}
+    </div></td>
+  </tr>`).join('');
+  return `
+    <div class="unimed-banner">
+      <div style="font-size:26px">🏥</div>
+      <div><div class="unimed-banner-title">UNIMED — Pegar Autorização Genesy</div>
+      <div class="unimed-banner-sub">${UNIMED.length} pacientes aguardando autorização</div></div>
+    </div>
+    <div class="toolbar" style="justify-content:flex-end">
+      <button class="btn-add" onclick="openUnimedModal()">＋ Adicionar Paciente</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Nome do Paciente</th><th>Data Agendada</th><th>Telefone</th><th>Cadastrado por</th><th>Ações</th></tr></thead>
+        <tbody>${rows||`<tr><td colspan="5"><div class="empty"><div class="empty-icon">🏥</div><div>Nenhum paciente</div></div></td></tr>`}</tbody>
+      </table>
+      <div class="table-footer"><span>${UNIMED.length} pacientes</span><span style="color:var(--purple);font-weight:700">Autorização pendente — Genesy</span></div>
+    </div>`;
+}
+
+function renderAdm(){
+  const userList=USERS.map(u=>{
+    const initials=(u.fullname||'?').split(' ').map(x=>x[0]).slice(0,2).join('').toUpperCase();
+    const color=u.color||'#4f8fff';
+    return `<div class="user-item">
+      <div class="user-item-left">
+        <div class="user-avatar" style="background:${color}22;color:${color}">${initials}</div>
+        <div><div class="user-name">${u.fullname}</div><div class="user-login">@${u.login}</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="role-chip ${u.role==='admin'?'role-admin':'role-user'}">${u.role==='admin'?'Admin':'Usuário'}</span>
+        <button class="btn-act" onclick="openUserModal('${u.id}')">✏️</button>
+        ${String(u.id)!==String(currentUser.id)?`<button class="btn-act del" onclick="deleteUser('${u.id}')">🗑</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+
+  const auditItems=AUDIT.slice(0,60).map(a=>`
+    <div class="audit-item">
+      <div class="audit-item-top">
+        <span class="audit-ev ${a.action==='create'?'create':a.action==='edit'?'edit':a.action==='delete'?'delete':''}">
+          ${a.action==='create'?'➕ Criou':a.action==='edit'?'✏️ Editou':a.action==='delete'?'🗑 Excluiu':'🔑 Login'}
+        </span>
+        <span class="audit-ts">${a.timestamp||''}</span>
+      </div>
+      <div class="audit-desc"><b>${a.user||''}</b> (@${a.login||''}) — ${a.detail||''}</div>
+    </div>`).join('');
+
+  return `
+    <div class="adm-grid">
+      <div class="adm-card">
+        <div class="adm-card-header">
+          <div class="adm-card-title">👥 Usuários</div>
+          <button class="btn-add" style="padding:6px 12px;font-size:11px" onclick="openUserModal()">＋ Novo</button>
+        </div>
+        <div class="adm-card-body">
+          <div class="user-list">${userList||'<div class="empty"><div class="empty-icon">👤</div><div>Nenhum usuário</div></div>'}</div>
+          <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+            <div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:8px;letter-spacing:1px">URL DO APPS SCRIPT</div>
+            <div class="url-row">
+              <input type="text" id="api-url-adm" value="${API_URL}">
+              <button class="btn-url" onclick="salvarURLAdm()">Atualizar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="adm-card">
+        <div class="adm-card-header">
+          <div class="adm-card-title">📋 Log de Auditoria</div>
+          <span style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace">${AUDIT.length} eventos</span>
+        </div>
+        <div class="adm-card-body">
+          <div class="audit-list">${auditItems||'<div class="empty"><div class="empty-icon">📋</div><div>Nenhum evento ainda</div></div>'}</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function salvarURLAdm(){
+  const url=document.getElementById('api-url-adm').value.trim();
+  if(!url.startsWith('https://script.google.com')){showToast('⚠️ URL inválida',true);return;}
+  API_URL=url; localStorage.setItem('convenio_api_url',url); showToast('✅ URL atualizada!');
+}
+
+// ═══════════════════════════════════
+// MODAIS
+// ═══════════════════════════════════
+function openAuthModal(id){
+  editAuthId=id||null;
+  document.getElementById('modal-auth-title').textContent=id?'✏️ Editar Autorização':'📋 Nova Autorização';
+  if(id){
+    const r=(DB[currentTab]||[]).find(x=>String(x.id)===String(id));
+    if(!r) return;
+    document.getElementById('f-registro').value=r.registro;
+    document.getElementById('f-guia').value=r.guia||'';
+    document.getElementById('f-status').value=r.status;
+    document.getElementById('f-convenio').value=r.convenio;
+    document.getElementById('f-nome').value=r.nome;
+    document.getElementById('f-obs').value=r.obs||'';
+  } else {
+    ['f-registro','f-guia','f-nome','f-obs'].forEach(f=>document.getElementById(f).value='');
+    document.getElementById('f-status').value='';
+    document.getElementById('f-convenio').value='';
+  }
+  document.getElementById('modal-auth').classList.add('open');
+}
+
+function openUnimedModal(id){
+  editUnimedId=id||null;
+  document.getElementById('modal-unimed-title').textContent=id?'✏️ Editar Paciente':'🏥 Adicionar Paciente Unimed';
+  if(id){
+    const r=UNIMED.find(x=>String(x.id)===String(id));
+    if(!r) return;
+    document.getElementById('uf-nome').value=r.nome;
+    document.getElementById('uf-tel').value=r.tel||'';
+    const p=(r.data||'').split('/');
+    document.getElementById('uf-data').value=p.length===3?`${p[2]}-${p[1]}-${p[0]}`:'';
+  } else {
+    ['uf-nome','uf-tel'].forEach(f=>document.getElementById(f).value='');
+    document.getElementById('uf-data').value='';
+  }
+  document.getElementById('modal-unimed').classList.add('open');
+}
+
+function openUserModal(id){
+  editUserId=id||null;
+  document.getElementById('modal-user-title').textContent=id?'✏️ Editar Usuário':'👤 Novo Usuário';
+  if(id){
+    const u=USERS.find(x=>String(x.id)===String(id));
+    if(!u) return;
+    document.getElementById('uf-fullname').value=u.fullname;
+    document.getElementById('uf-login').value=u.login;
+    document.getElementById('uf-password').value=u.password||'';
+    document.getElementById('uf-role').value=u.role;
+  } else {
+    ['uf-fullname','uf-login','uf-password'].forEach(f=>document.getElementById(f).value='');
+    document.getElementById('uf-role').value='user';
+  }
+  document.getElementById('modal-user').classList.add('open');
+}
+
+function closeModals(){
+  ['modal-auth','modal-unimed','modal-user','modal-global','modal-hist'].forEach(id=>document.getElementById(id).classList.remove('open'));
+  editAuthId=editUnimedId=editUserId=null;
+}
+
+// ═══════════════════════════════════
+// SALVAR
+// ═══════════════════════════════════
+async function saveAuth(){
+  const registro=document.getElementById('f-registro').value.trim();
+  const guia=document.getElementById('f-guia').value.trim();
+  const status=document.getElementById('f-status').value;
+  const convenio=document.getElementById('f-convenio').value;
+  const nome=document.getElementById('f-nome').value.trim();
+  const obs=document.getElementById('f-obs').value.trim();
+  if(!registro||!nome||!status||!convenio){showToast('⚠️ Preencha os campos obrigatórios (*)',true);return;}
+
+  const btn=document.getElementById('btn-save-auth');
+  btn.disabled=true; btn.textContent='Salvando...';
+  const now=new Date().toLocaleString('pt-BR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  const isNew=!editAuthId;
+  const id=editAuthId||String(nextId++);
+  if(!DB[currentTab]) DB[currentTab]=[];
+
+  if(isNew){
+    DB[currentTab].push({id,registro,guia,status,convenio,nome,obs,createdBy:currentUser.login,createdAt:now,editedBy:'',editedAt:''});
+  } else {
+    const idx=DB[currentTab].findIndex(x=>String(x.id)===String(editAuthId));
+    if(idx!==-1) DB[currentTab][idx]={...DB[currentTab][idx],registro,guia,status,convenio,nome,obs,editedBy:currentUser.login,editedAt:now};
+  }
+  closeModals(); buildTabs(); render();
+
+  try {
+    const record=(DB[currentTab]||[]).find(x=>String(x.id)===String(id));
+    await api('saveAuth',{tab:currentTab,record});
+    await pushAudit(isNew?'create':'edit',`${isNew?'Criou':'Editou'} reg. ${registro} — ${nome} (${currentTab})`);
+    // Salvar no histórico local
+    if(!HISTORY[id]) HISTORY[id]=[];
+    HISTORY[id].unshift({action:isNew?'create':'edit',user:currentUser.fullname,login:currentUser.login,timestamp:now,
+      fields:`Status: ${status} | Convênio: ${convenio} | Guia: ${guia||'—'} | Obs: ${obs||'—'}`});
+    showToast(isNew?'✅ Salvo no Google Sheets!':'✅ Atualizado no Google Sheets!');
+  } catch(e){showToast('⚠️ Salvo local. Erro Sheets: '+e.message,true);}
+  finally{btn.disabled=false; btn.textContent='💾 Salvar';}
+}
+
+async function saveUnimed(){
+  const nome=document.getElementById('uf-nome').value.trim();
+  const tel=document.getElementById('uf-tel').value.trim();
+  const raw=document.getElementById('uf-data').value;
+  let data='—';
+  if(raw){const[y,m,d]=raw.split('-');data=`${d}/${m}/${y}`;}
+  if(!nome){showToast('⚠️ Preencha o nome',true);return;}
+
+  const btn=document.getElementById('btn-save-unimed');
+  btn.disabled=true; btn.textContent='Salvando...';
+  const isNew=!editUnimedId;
+  const id=editUnimedId||String(nextId++);
+  const now=new Date().toLocaleString('pt-BR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+
+  if(isNew) UNIMED.push({id,nome,data,tel,createdBy:currentUser.login,createdAt:now});
+  else{const idx=UNIMED.findIndex(x=>String(x.id)===String(editUnimedId));if(idx!==-1)UNIMED[idx]={...UNIMED[idx],nome,data,tel};}
+  closeModals(); buildTabs(); render();
+
+  try{
+    const record=UNIMED.find(x=>String(x.id)===String(id));
+    await api('saveUnimed',{record});
+    await pushAudit(isNew?'create':'edit',`${isNew?'Adicionou':'Editou'} paciente Unimed: ${nome}`);
+    showToast(isNew?'✅ Paciente salvo no Sheets!':'✅ Paciente atualizado!');
+  }catch(e){showToast('⚠️ Salvo local. Erro: '+e.message,true);}
+  finally{btn.disabled=false; btn.textContent='💾 Salvar';}
+}
+
+async function saveUser(){
+  const fullname=document.getElementById('uf-fullname').value.trim();
+  const login=document.getElementById('uf-login').value.trim();
+  const password=document.getElementById('uf-password').value;
+  const role=document.getElementById('uf-role').value;
+  if(!fullname||!login||!password){showToast('⚠️ Preencha todos os campos',true);return;}
+  if(password.length<6){showToast('⚠️ Senha mínimo 6 caracteres',true);return;}
+
+  const btn=document.getElementById('btn-save-user');
+  btn.disabled=true; btn.textContent='Salvando...';
+  const isNew=!editUserId;
+  const id=editUserId||String(nextId++);
+  const colors=['#4f8fff','#00e5a0','#ffd166','#ff6b6b','#c084fc','#fb923c'];
+  const color=colors[USERS.length%colors.length];
+
+  if(isNew){
+    if(USERS.find(u=>u.login===login)){showToast('⚠️ Login já existe!',true);btn.disabled=false;btn.textContent='💾 Salvar';return;}
+    USERS.push({id,fullname,login,password,role,color});
+  } else {
+    const idx=USERS.findIndex(x=>String(x.id)===String(editUserId));
+    if(idx!==-1) USERS[idx]={...USERS[idx],fullname,login,password,role};
+  }
+  closeModals(); render();
+
+  try{
+    const record=USERS.find(x=>String(x.id)===String(id));
+    await api('saveUser',{record});
+    await pushAudit(isNew?'create':'edit',`${isNew?'Criou':'Editou'} usuário @${login} (${role})`);
+    showToast(isNew?'✅ Usuário criado no Sheets!':'✅ Usuário atualizado!');
+  }catch(e){showToast('⚠️ Salvo local. Erro: '+e.message,true);}
+  finally{btn.disabled=false; btn.textContent='💾 Salvar';}
+}
+
+// ═══════════════════════════════════
+// DELETAR
+// ═══════════════════════════════════
+async function deleteAuth(id){
+  if(!confirm('Excluir este registro?')) return;
+  const r=(DB[currentTab]||[]).find(x=>String(x.id)===String(id));
+  DB[currentTab]=(DB[currentTab]||[]).filter(x=>String(x.id)!==String(id));
+  buildTabs(); render();
+  try{await api('deleteAuth',{tab:currentTab,id}); await pushAudit('delete',`Excluiu reg. ${r?.registro||id} — ${r?.nome||''}`); showToast('🗑 Excluído!');}
+  catch(e){showToast('⚠️ Erro: '+e.message,true);}
+}
+async function deleteUnimed(id){
+  if(!confirm('Excluir este paciente?')) return;
+  const r=UNIMED.find(x=>String(x.id)===String(id));
+  UNIMED=UNIMED.filter(x=>String(x.id)!==String(id));
+  buildTabs(); render();
+  try{await api('deleteUnimed',{id}); await pushAudit('delete',`Excluiu paciente Unimed: ${r?.nome||id}`); showToast('🗑 Excluído!');}
+  catch(e){showToast('⚠️ Erro: '+e.message,true);}
+}
+async function deleteUser(id){
+  if(String(id)===String(currentUser.id)){showToast('⚠️ Não pode excluir sua própria conta',true);return;}
+  if(!confirm('Excluir este usuário?')) return;
+  const u=USERS.find(x=>String(x.id)===String(id));
+  USERS=USERS.filter(x=>String(x.id)!==String(id)); render();
+  try{await api('deleteUser',{id}); await pushAudit('delete',`Excluiu usuário @${u?.login||id}`); showToast('🗑 Usuário excluído!');}
+  catch(e){showToast('⚠️ Erro: '+e.message,true);}
+}
+
+// ═══════════════════════════════════
+// UTILS
+// ═══════════════════════════════════
+async function pushAudit(action,detail){
+  const entry={action,detail,user:currentUser.fullname,login:currentUser.login,timestamp:new Date().toLocaleString('pt-BR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})};
+  AUDIT.unshift(entry);
+  try{await api('addAudit',entry);}catch(_){}
+}
+function setFilter(f){currentFilter=f;render();}
+
+
+// ═══════════════════════════════════
+// RENDER ARQUIVADOS
+// ═══════════════════════════════════
+function renderArquivados(){
+  const isAdmin=currentUser?.role==='admin';
+  const byMes=getArquivadosPorMes();
+  const total=getArquivados().length;
+
+  function arquivadoRows(list){
+    if(!list.length) return '';
+    return list.map((r,i)=>`<tr style="animation-delay:${i*.02}s">
+      <td class="num">${r.registro}</td>
+      <td>${convTag(r.convenio)}</td>
+      <td class="nome-cell">${r.nome}</td>
+      <td class="num" style="color:#6b7280">${r.guia||'—'}</td>
+      <td class="audit-cell">${auditCell(r)}</td>
+      <td class="obs-cell">${r.obs||'—'}</td>
+      <td><div class="actions">
+        <button class="btn-desarquivar" onclick="desarquivar('${r._tab}','${r.id}')" title="Mover de volta para Em Análise">↩ Reabrir</button>
+        <button class="btn-act" onclick="openHist('${r.id}')">🕐</button>
+        ${isAdmin?`<button class="btn-act del" onclick="deleteArquivado('${r._tab}','${r.id}')">🗑</button>`:''}
+      </div></td>
+    </tr>`).join('');
+  }
+
+  const mesesHtml = Object.keys(byMes).length===0
+    ? `<div class="empty" style="padding:60px"><div class="empty-icon">✅</div><div>Nenhuma autorização arquivada ainda</div></div>`
+    : Object.entries(byMes).map(([mes,rows])=>`
+        <div class="mes-section-title">📅 ${TAB_LABELS[mes]||mes} — ${rows.length} registro${rows.length!==1?'s':''}</div>
+        <div class="table-wrap" style="margin-bottom:16px">
+          <table>
+            <thead><tr>
+              <th>Registro</th><th>Convênio</th><th>Paciente</th>
+              <th>Guia</th><th>Arquivado por</th><th>Observação</th><th>Ações</th>
+            </tr></thead>
+            <tbody>${arquivadoRows(rows)}</tbody>
+          </table>
+        </div>`).join('');
+
+  return `
+    <div class="arquivados-header">
+      <div style="font-size:26px">✅</div>
+      <div>
+        <div class="arquivados-title">Autorizações Arquivadas</div>
+        <div class="arquivados-sub">Registros autorizados removidos da tabela principal. Clique em "Reabrir" para mover de volta.</div>
+      </div>
+      <div class="arquivados-count">${total} arquivado${total!==1?'s':''}</div>
+    </div>
+    ${mesesHtml}`;
+}
+
+function desarquivar(tab, id){
+  const idx=(DB[tab]||[]).findIndex(x=>String(x.id)===String(id));
+  if(idx===-1) return;
+  DB[tab][idx].status='Análise';
+  DB[tab][idx].editedBy=currentUser.login;
+  DB[tab][idx].editedAt=new Date().toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  buildTabs(); render();
+  // Salvar no Sheets
+  api('saveAuth',{tab,record:DB[tab][idx]}).catch(()=>{});
+  pushAudit('edit',`Reabriu reg. ${DB[tab][idx].registro} — ${DB[tab][idx].nome}`);
+  showToast('↩ Registro reaberto e movido para Em Análise');
+}
+
+function deleteArquivado(tab, id){
+  if(!confirm('Excluir permanentemente este registro arquivado?')) return;
+  const r=(DB[tab]||[]).find(x=>String(x.id)===String(id));
+  DB[tab]=(DB[tab]||[]).filter(x=>String(x.id)!==String(id));
+  buildTabs(); render();
+  api('deleteAuth',{tab,id}).catch(()=>{});
+  pushAudit('delete',`Excluiu arquivado ${r?.registro||id} — ${r?.nome||''}`);
+  showToast('🗑 Registro excluído');
+}
+
+// ═══════════════════════════════════
+// RENDER URGENTES
+// ═══════════════════════════════════
+function renderUrgentes(){
+  const isAdmin=currentUser?.role==='admin';
+  const urgentes=getUrgentes();
+  const vencidos=urgentes.filter(r=>r._prazo.status==='vencido');
+  const hoje=urgentes.filter(r=>r._prazo.status==='urgente');
+  const alerta=urgentes.filter(r=>r._prazo.status==='alerta');
+
+  function urgenteRows(list){
+    if(!list.length) return `<tr><td colspan="9"><div class="empty"><div class="empty-icon">✅</div><div>Nenhum registro nesta categoria</div></div></td></tr>`;
+    return list.map((r,i)=>{
+      const p=r._prazo;
+      const rowClass=p.status==='vencido'?'row-vencido':p.status==='urgente'?'row-urgente':'row-alerta';
+      const prazoBadge=`<span class="prazo-badge prazo-${p.status==='alerta'?'alerta':p.status==='urgente'?'urgente':'vencido'}">${p.label}</span>`;
+      return `<tr class="${rowClass}" style="animation-delay:${i*.025}s">
+        <td style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace">${TAB_LABELS[r._tab]||r._tab}</td>
+        <td class="num">${r.registro}</td>
+        <td>${convTag(r.convenio)}</td>
+        <td class="nome-cell">${r.nome}</td>
+        <td>${badge(r.status)}</td>
+        <td>${prazoBadge}</td>
+        <td class="num" style="color:var(--muted)">${r.guia||'—'}</td>
+        <td class="obs-cell">${r.obs||'—'}</td>
+        <td><div class="actions">
+          <button class="btn-act" onclick="goToRecord('${r._tab}','${r.id}')">↗</button>
+          <button class="btn-act" onclick="openHist('${r.id}')">🕐</button>
+        </div></td>
+      </tr>`;
+    }).join('');
+  }
+
+  function section(title, color, list){
+    return `
+      <div style="font-size:11px;font-weight:700;color:${color};letter-spacing:.5px;text-transform:uppercase;margin:18px 0 8px;font-family:'DM Mono',monospace">${title} (${list.length})</div>
+      <div class="table-wrap" style="margin-bottom:4px">
+        <table>
+          <thead><tr>
+            <th>Mês</th><th>Registro</th><th>Convênio</th><th>Paciente</th>
+            <th>Status</th><th>Prazo</th><th>Guia</th><th>Obs</th><th>Ações</th>
+          </tr></thead>
+          <tbody>${urgenteRows(list)}</tbody>
+        </table>
+      </div>`;
+  }
+
+  return `
+    <div class="urgentes-header">
+      <div style="font-size:26px">🚨</div>
+      <div>
+        <div class="urgentes-title">Autorizações Urgentes</div>
+        <div class="urgentes-sub">Registros em análise com prazo vencido ou próximo do vencimento</div>
+      </div>
+      <div class="urgentes-count">${urgentes.length} pendentes</div>
+    </div>
+    ${urgentes.length===0
+      ? `<div class="empty" style="padding:60px"><div class="empty-icon">✅</div><div>Nenhuma autorização urgente no momento!</div></div>`
+      : section('🔴 Vencidos', 'var(--warn)', vencidos)
+      + section('🔴 Vencem hoje ou em 2 dias', '#ff8888', hoje)
+      + section('🟡 Vencem em 3–4 dias', 'var(--yellow)', alerta)
+    }`;
+}
+
+// ═══════════════════════════════════
+// BUSCA GLOBAL
+// ═══════════════════════════════════
+function openGlobalSearch(){
+  document.getElementById('global-q').value='';
+  document.getElementById('global-results').innerHTML='<div class="gr-empty">Digite para buscar em todos os meses</div>';
+  document.getElementById('modal-global').classList.add('open');
+  setTimeout(()=>document.getElementById('global-q').focus(),100);
+}
+
+function runGlobalSearch(q){
+  q=q.toLowerCase().trim();
+  const res=document.getElementById('global-results');
+  if(!q){res.innerHTML='<div class="gr-empty">Digite para buscar em todos os meses</div>';return;}
+  const found=[];
+  Object.entries(DB).forEach(([tab,rows])=>{
+    (rows||[]).forEach(r=>{
+      if(r.registro?.toLowerCase().includes(q)||r.nome?.toLowerCase().includes(q)||
+         r.convenio?.toLowerCase().includes(q)||(r.guia||'').toLowerCase().includes(q)||(r.obs||'').toLowerCase().includes(q)){
+        found.push({...r,_tab:tab});
+      }
+    });
+  });
+  if(!found.length){res.innerHTML='<div class="gr-empty">Nenhum resultado encontrado</div>';return;}
+  res.innerHTML=found.slice(0,40).map(r=>`
+    <div class="global-result-item" onclick="goToRecord('${r._tab}','${r.id}')">
+      <span class="gr-tab">${TAB_LABELS[r._tab]||r._tab}</span>
+      ${convTag(r.convenio)}
+      <div style="flex:1">
+        <div class="gr-nome">${r.nome}</div>
+        <div style="display:flex;gap:8px;margin-top:3px">
+          <span class="gr-reg">${r.registro}</span>
+          ${badge(r.status)}
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function goToRecord(tab,id){
+  closeModals();
+  currentTab=tab; currentFilter='all'; currentConvFilter='Todos'; sortKey=''; sortDir=1;
+  buildTabs(); render();
+  // Destaca a linha após render
+  setTimeout(()=>{
+    const rows=document.querySelectorAll('#tbody tr');
+    rows.forEach(row=>{
+      if(row.innerHTML.includes(id)){
+        row.style.background='rgba(79,143,255,.15)';
+        row.scrollIntoView({behavior:'smooth',block:'center'});
+        setTimeout(()=>row.style.background='',2000);
+      }
+    });
+  },200);
+}
+
+// ═══════════════════════════════════
+// HISTÓRICO DO REGISTRO
+// ═══════════════════════════════════
+function openHist(id){
+  const hist=HISTORY[id]||[];
+  // Busca no AUDIT também
+  const reg=(Object.values(DB).flat().find(r=>String(r.id)===String(id)));
+  const auditEntries=AUDIT.filter(a=>a.detail&&a.detail.includes(reg?.registro||'__'));
+
+  const allEntries=[...hist,...auditEntries.map(a=>({
+    action:a.action,user:a.user,login:a.login,timestamp:a.timestamp,fields:a.detail
+  }))].sort((a,b)=>b.timestamp?.localeCompare(a.timestamp)||0);
+
+  const content=document.getElementById('hist-content');
+  if(!allEntries.length){
+    // Mostrar pelo menos o criado/editado do registro
+    const r=reg;
+    const items=[];
+    if(r?.editedBy&&r?.editedAt) items.push({action:'edit',user:r.editedBy,timestamp:r.editedAt,fields:'Última edição registrada'});
+    if(r?.createdBy&&r?.createdAt) items.push({action:'create',user:r.createdBy,timestamp:r.createdAt,fields:'Registro criado'});
+    if(!items.length){content.innerHTML='<div class="gr-empty">Nenhum histórico disponível para este registro</div>';document.getElementById('modal-hist').classList.add('open');return;}
+    content.innerHTML=items.map(h=>`
+      <div class="hist-item">
+        <div class="hist-item-top">
+          <span class="hist-ev ${h.action}">${h.action==='create'?'➕ Criado':h.action==='edit'?'✏️ Editado':'🗑 Excluído'}</span>
+          <span class="hist-ts">${h.timestamp||''}</span>
+        </div>
+        <div class="hist-detail"><b>${h.user||'—'}</b> — ${h.fields||''}</div>
+      </div>`).join('');
+    document.getElementById('modal-hist').classList.add('open');
+    return;
+  }
+
+  content.innerHTML=allEntries.slice(0,30).map(h=>`
+    <div class="hist-item">
+      <div class="hist-item-top">
+        <span class="hist-ev ${h.action==='create'?'create':h.action==='edit'?'edit':'delete'}">${h.action==='create'?'➕ Criado':h.action==='edit'?'✏️ Editado':'🗑 Excluído'}</span>
+        <span class="hist-ts">${h.timestamp||''}</span>
+      </div>
+      <div class="hist-detail"><b>${h.user||'—'}</b> (@${h.login||'—'}) — ${h.fields||''}</div>
+    </div>`).join('');
+  document.getElementById('modal-hist').classList.add('open');
+}
+
+function sort(k){if(sortKey===k)sortDir*=-1;else{sortKey=k;sortDir=1;}render();}
+function exportCSV(){
+  const rows=DB[currentTab]||[];
+  const csv='Registro,Status,Convênio,Nome,Guia,Observação,CriadoPor,CriadoEm,EditadoPor,EditadoEm\n'+
+    rows.map(r=>`${r.registro},"${r.status}","${r.convenio}","${r.nome}","${r.guia||''}","${r.obs||''}","${r.createdBy||''}","${r.createdAt||''}","${r.editedBy||''}","${r.editedAt||''}"`).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
+  a.download=`autorizacoes_${currentTab.replace(/ /g,'_')}.csv`;
+  a.click(); showToast('⬇ CSV exportado!');
+}
+function showToast(msg,warn){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.style.borderColor=warn?'var(--warn)':'var(--accent2)';
+  t.style.color=warn?'var(--warn)':'var(--accent2)';
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3200);
+}
+['modal-auth','modal-unimed','modal-user','modal-global','modal-hist'].forEach(id=>
+  document.getElementById(id).addEventListener('click',e=>{if(e.target===e.currentTarget)closeModals();})
+);
+</script>
+</body>
+</html>
