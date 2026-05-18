@@ -105,36 +105,22 @@ td{padding:11px 12px;font-size:12px;vertical-align:middle;}
 .badge-arquivado {background:#f0fdf4;color:#166534;border:1px solid #86efac;}
 
 /* ── CONVÊNIO COLORIDO ────────────────────────── */
-.conv-tag{display:inline-flex;align-items:center;padding:3px 8px;border-radius:5px;font-size:10px;font-weight:800;white-space:nowrap;font-family:'Plus Jakarta Sans',sans-serif;}
-/* Amil — azul royal */
-.conv-amil        {background:#e8f0fe;color:#1a56db;border:1px solid #c7d8fc;font-weight:800;}
-/* Asfeb — azul marinho */
-.conv-asfeb       {background:#e6eaf5;color:#1a2e6b;border:1px solid #b0bde0;font-weight:800;}
-/* Bradesco — vermelho Bradesco */
-.conv-bradesco    {background:#fce8e8;color:#cc0000;border:1px solid #f5b8b8;font-weight:800;}
-/* Cassi — azul BB/Cassi */
-.conv-cassi       {background:#e6f0fa;color:#005ca8;border:1px solid #b3d1ef;font-weight:800;}
-/* Geap — verde Geap */
-.conv-geap        {background:#e6f4ec;color:#007a3d;border:1px solid #a3d4b8;font-weight:800;}
-/* Planserv — azul governo */
-.conv-planserv    {background:#e8edf8;color:#1f3c88;border:1px solid #b5c3e8;font-weight:800;}
-/* Plansul — azul Plansul */
-.conv-plansul     {background:#e7f0fb;color:#005baa;border:1px solid #aecde8;font-weight:800;}
-/* Postal Saúde — amarelo Correios */
-.conv-postal      {background:#fff8e6;color:#c47f00;border:1px solid #fde49a;font-weight:800;}
-/* Promédica — verde saúde */
-.conv-promedica   {background:#e8f5ec;color:#1a7c3e;border:1px solid #a8d8b8;font-weight:800;}
-/* SelectSaúde — laranja */
-.conv-select      {background:#fff3e6;color:#c45f00;border:1px solid #fdd09a;font-weight:800;}
-/* SulAmérica — laranja SulAmérica */
-.conv-sulamerica  {background:#fff0e6;color:#c44f00;border:1px solid #fdc89a;font-weight:800;}
-/* Unimed — verde Unimed */
-.conv-unimed      {background:#e6f5ec;color:#006b33;border:1px solid #9ed4b5;font-weight:800;}
-/* União Médica — azul União Médica */
-.conv-uniaomedica {background:#e8f0fb;color:#003f9e;border:1px solid #adc4ef;font-weight:800;}
-/* Vitallis — roxo */
-.conv-vitallis    {background:#f3eefa;color:#6b21a8;border:1px solid #d0b0ef;font-weight:800;}
-.conv-outro       {background:#f1f4f8;color:#6b7280;border:1px solid #dde1ea;font-weight:700;}
+.conv-tag{display:inline-flex;align-items:center;font-size:12px;font-weight:800;white-space:nowrap;font-family:'Plus Jakarta Sans',sans-serif;background:none!important;border:none!important;padding:0!important;border-radius:0!important;}
+.conv-amil        {color:#1a56db;}
+.conv-asfeb       {color:#1a2e6b;}
+.conv-bradesco    {color:#cc0000;}
+.conv-cassi       {color:#005ca8;}
+.conv-geap        {color:#007a3d;}
+.conv-planserv    {color:#1f3c88;}
+.conv-plansul     {color:#005baa;}
+.conv-postal      {color:#c47f00;}
+.conv-promedica   {color:#1a7c3e;}
+.conv-select      {color:#c45f00;}
+.conv-sulamerica  {color:#c44f00;}
+.conv-unimed      {color:#006b33;}
+.conv-uniaomedica {color:#003f9e;}
+.conv-vitallis    {color:#6b21a8;}
+.conv-outro       {color:#6b7280;}
 
 .obs-cell{font-size:11px;color:var(--muted);font-style:italic;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .nome-cell{font-weight:600;font-size:12px;}
@@ -318,7 +304,7 @@ tbody tr.row-alerta:hover{background:#fef3c7!important;}
     <div class="header-right">
       <div class="header-stats">
         <div class="stat-pill"><div class="stat-dot" style="background:var(--yellow)"></div><span id="cnt-analise">0</span> Análise</div>
-        <div class="stat-pill"><div class="stat-dot" style="background:#1d4ed8"></div><span id="cnt-autorizado">0</span> Pendente</div>
+        <div class="stat-pill"><div class="stat-dot" style="background:#1d4ed8"></div><span id="cnt-autorizado">0</span> Exigência</div>
         <div class="stat-pill"><div class="stat-dot" style="background:var(--warn)"></div><span id="cnt-negada">0</span> Negadas</div>
         <div class="stat-pill"><div class="stat-dot" style="background:var(--accent)"></div><span id="cnt-total">0</span> Total</div>
         <div class="stat-pill" style="border-color:rgba(255,107,107,.4);cursor:pointer" onclick="switchTab('🚨 Urgentes')"><div class="stat-dot" style="background:var(--warn)"></div><span id="cnt-urgentes">0</span> Urgentes</div>
@@ -347,7 +333,7 @@ tbody tr.row-alerta:hover{background:#fef3c7!important;}
         <select id="f-status">
           <option value="">— Selecione —</option>
           <option value="Análise">Em Análise</option>
-          <option value="Pendente">Pendente</option>
+          <option value="Exigência">Exigência</option>
           <option value="Autorizado">Autorizado</option>
           <option value="Negada">Negada</option>
         </select>
@@ -796,7 +782,7 @@ function switchTab(t){currentTab=t;currentFilter='all';currentConvFilter='Todos'
 function updateStats(){
   const all=Object.values(DB).flat();
   document.getElementById('cnt-analise').textContent    = all.filter(r=>r.status==='Análise').length;
-  document.getElementById('cnt-autorizado').textContent = all.filter(r=>r.status==='Pendente').length;
+  document.getElementById('cnt-autorizado').textContent = all.filter(r=>r.status==='Exigência').length;
   document.getElementById('cnt-negada').textContent     = all.filter(r=>r.status==='Negada').length;
   document.getElementById('cnt-total').textContent      = all.length;
   const urgEl=document.getElementById('cnt-urgentes');
@@ -816,7 +802,7 @@ function render(){
 }
 
 function badge(s){
-  const m={Análise:['badge-analise','⏳'],Negada:['badge-negada','✗'],Autorizado:['badge-autorizado','✓'],Pendente:['badge-pendente','⏸'],Arquivado:['badge-arquivado','📁']};
+  const m={Análise:['badge-analise','⏳'],Negada:['badge-negada','✗'],Autorizado:['badge-autorizado','✓'],Exigência:['badge-pendente','⏸'],Arquivado:['badge-arquivado','📁']};
   const[c,i]=m[s]||['badge-analise','?'];
   return `<span class="badge ${c}">${i} ${s}</span>`;
 }
@@ -883,7 +869,7 @@ function renderMain(){
       </div>
       <button class="filter-btn${currentFilter==='all'?' f-all':''}" onclick="setFilter('all')">Todos</button>
       <button class="filter-btn${currentFilter==='Análise'?' f-analise':''}" onclick="setFilter('Análise')">Em Análise</button>
-      <button class="filter-btn${currentFilter==='Pendente'?' f-pendente':''}" onclick="setFilter('Pendente')">Pendente</button>
+      <button class="filter-btn${currentFilter==='Exigência'?' f-pendente':''}" onclick="setFilter('Exigência')">Exigência</button>
       <button class="filter-btn${currentFilter==='Negada'?' f-negada':''}" onclick="setFilter('Negada')">Negada</button>
       <button class="btn-add" onclick="openAuthModal()">＋ Novo</button>
     </div>
@@ -953,7 +939,7 @@ function renderUnimed(){
         <thead><tr><th>Nome do Paciente</th><th>Data Agendada</th><th>Telefone</th><th>Cadastrado por</th><th>Ações</th></tr></thead>
         <tbody>${rows||`<tr><td colspan="5"><div class="empty"><div class="empty-icon">🏥</div><div>Nenhum paciente</div></div></td></tr>`}</tbody>
       </table>
-      <div class="table-footer"><span>${UNIMED.length} pacientes</span><span style="color:var(--purple);font-weight:700">Autorização pendente — Genesy</span></div>
+      <div class="table-footer"><span>${UNIMED.length} pacientes</span><span style="color:var(--purple);font-weight:700">Autorização exigencia — Genesy</span></div>
     </div>`;
 }
 
@@ -1350,7 +1336,7 @@ function renderUrgentes(){
         <div class="urgentes-title">Autorizações Urgentes</div>
         <div class="urgentes-sub">Registros em análise com prazo vencido ou próximo do vencimento</div>
       </div>
-      <div class="urgentes-count">${urgentes.length} pendentes</div>
+      <div class="urgentes-count">${urgentes.length} exigencias</div>
     </div>
     ${urgentes.length===0
       ? `<div class="empty" style="padding:60px"><div class="empty-icon">✅</div><div>Nenhuma autorização urgente no momento!</div></div>`
